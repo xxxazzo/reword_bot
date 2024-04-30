@@ -1,17 +1,19 @@
 # Импортируем необходимые классы.
-from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, InlineKeyboardMarkup, InlineKeyboardButton
-from telegram.ext import Application, filters, ContextTypes, CommandHandler, MessageHandler, CallbackQueryHandler, \
-    ConversationHandler
-from telegram.constants import ParseMode
-from reword_token import TOKEN
-from data import db_session
-from data.users import User
-from data.words import Word, OwnWord
-from data.category import Category
+import datetime
 import json
 import random
-import datetime
+
 import requests
+from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, InlineKeyboardMarkup, InlineKeyboardButton
+from telegram.constants import ParseMode
+from telegram.ext import Application, filters, ContextTypes, CommandHandler, MessageHandler, CallbackQueryHandler, \
+    ConversationHandler
+
+from data import db_session
+from data.category import Category
+from data.users import User
+from data.words import Word, OwnWord
+from reword_token import TOKEN
 
 # Константы
 CHOICE, TYPING_REPLY, REMEMBER, CALLBACK, RECEIVE_IMAGE = range(5)
@@ -43,7 +45,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     '''Начало работы бота'''
     add_user_if_not_added(update.message.from_user['first_name'], update.effective_chat.id)
     await update.message.reply_photo('static/img/reword_logo.png',
-                                     caption=f'Добро пожаловать в reword, {update.message.from_user['first_name']}!')
+                                     caption=f'Добро пожаловать в reword, {update.message.from_user["first_name"]}!')
     await menu(update, context)
 
 
@@ -54,7 +56,7 @@ def make_reply_markup(markup_id, **kwargs) -> ReplyKeyboardMarkup:
         return ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True,
                                    input_field_placeholder="Выберите пункт меню")
     elif markup_id == 2:  # learn section markup
-        reply_keyboard = [[f'Изменить изучаемые категории 📝️({kwargs['category_text']})'],
+        reply_keyboard = [[f'Изменить изучаемые категории 📝️({kwargs["category_text"]})'],
                           ['Учить новые слова 🆕', 'Повторить слова 🔁'],
                           ['Вернуться 🔙']]
         return ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, input_field_placeholder='Выберите опцию')
@@ -105,7 +107,8 @@ def make_inline_markup(markup_id, **kwargs) -> InlineKeyboardMarkup:
                                    [InlineKeyboardButton('✅ Мои слова 📖', callback_data='change_categories OwnWords')])
         else:
             inline_keyboard.insert(0,
-                                   [InlineKeyboardButton('☑️ Мои слова 📖', callback_data='change_categories OwnWords')])
+                                   [InlineKeyboardButton('☑️ Мои слова 📖',
+                                                         callback_data='change_categories OwnWords')])
         inline_keyboard.append([InlineKeyboardButton('Подтвердить ✔️', callback_data='change_categories OK')])
         return InlineKeyboardMarkup(inline_keyboard)
     elif markup_id == 2:  # repeat quiz markup
@@ -400,7 +403,8 @@ async def repeat_words(update: Update, context: ContextTypes.DEFAULT_TYPE):
     db_sess = db_session.create_session()
     user = db_sess.query(User).filter(User.chat_id == update.effective_chat.id).first()
     if not get_words_for_repeating(user.chat_id):
-        await update.message.reply_text('<b>У тебя нету доступных слов для повторения 🫢</b>', parse_mode=ParseMode.HTML)
+        await update.message.reply_text('<b>У тебя нету доступных слов для повторения 🫢</b>',
+                                        parse_mode=ParseMode.HTML)
         await learn_section(update, context)
         return ConversationHandler.END
     else:
@@ -571,7 +575,7 @@ async def regular_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data['info'] = 'EN'
         if context.user_data.get('EN', False):
             await update.message.reply_text(
-                f'Ранее было введено: {context.user_data.get('EN')}\nВведите слово на английском(можно будет изменить):',
+                f'Ранее было введено: {context.user_data.get("EN")}\nВведите слово на английском(можно будет изменить):',
                 reply_markup=ReplyKeyboardRemove())
         else:
             await update.message.reply_text('Введите слово на английском(можно будет изменить):',
@@ -581,7 +585,7 @@ async def regular_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data['info'] = 'RU'
         if context.user_data.get('RU', False):
             await update.message.reply_text(
-                f'Ранее было введено: {context.user_data.get('RU')}\nВведите перевод на русском(можно будет изменить):',
+                f'Ранее было введено: {context.user_data.get("RU")}\nВведите перевод на русском(можно будет изменить):',
                 reply_markup=ReplyKeyboardRemove())
         else:
             await update.message.reply_text('Введите перевод на русском(можно будет изменить):',
@@ -623,7 +627,7 @@ async def save_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
     new_own_word.translation = context.user_data['RU']
     new_own_word.user_id = user.id
     if context.user_data.get('image', False):
-        filename = f'{update.effective_chat.id}_{datetime.datetime.now().strftime('%H%M%S%j%Y')}.jpg'
+        filename = f'{update.effective_chat.id}_{datetime.datetime.now().strftime("%H%M%S%j%Y")}.jpg'
         path = f'static/users_img/{filename}'
         try:
             await context.user_data['image'].download_to_drive(path)
@@ -694,7 +698,7 @@ async def translate(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text('Упс.. Какая-то ошибка‼️',
                                         reply_markup=make_reply_markup(8, phase=context.user_data['phase']))
         return CHOICE
-    await update.message.reply_text(f'Перевод:\n\n{response.json()['destination-text']}',
+    await update.message.reply_text(f'Перевод:\n\n{response.json()["destination-text"]}',
                                     reply_markup=make_reply_markup(8, phase=context.user_data['phase']))
     return CHOICE
 
@@ -753,12 +757,13 @@ def main():
     application.add_handler(categories_conv)
     add_word_conv = ConversationHandler(
         entry_points=[MessageHandler(filters.Regex('^(Добавить своё слово ➕)$'), add_word_section)],
-        states={CHOICE: [MessageHandler(filters.Regex('^(Слово на английском|Перевод|Добавить картинку-ассоциацию 🖼)$'),
-                                        regular_choice)],
-                TYPING_REPLY: [
-                    MessageHandler(filters.TEXT & ~(filters.COMMAND | filters.Regex("^(Сохранить слово 💾|Отмена ❌)$")),
-                                   receive_information)],
-                RECEIVE_IMAGE: [MessageHandler(filters.PHOTO, receive_image)]},
+        states={
+            CHOICE: [MessageHandler(filters.Regex('^(Слово на английском|Перевод|Добавить картинку-ассоциацию 🖼)$'),
+                                    regular_choice)],
+            TYPING_REPLY: [
+                MessageHandler(filters.TEXT & ~(filters.COMMAND | filters.Regex("^(Сохранить слово 💾|Отмена ❌)$")),
+                               receive_information)],
+            RECEIVE_IMAGE: [MessageHandler(filters.PHOTO, receive_image)]},
         fallbacks=[MessageHandler(filters.Regex('^(Отмена ❌)$'), cancel),
                    MessageHandler(filters.Regex('^(Сохранить слово 💾)$'), save_word)])
     application.add_handler(add_word_conv)
