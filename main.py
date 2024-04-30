@@ -230,7 +230,7 @@ async def learn_new_words(update: Update, context: ContextTypes.DEFAULT_TYPE):
     '''Открытие области для изучения новых слов'''
     db_sess = db_session.create_session()
     user = db_sess.query(User).filter(User.chat_id == update.effective_chat.id).first()
-    if not user.categories_studied and user.categories_studied:
+    if not user.categories_studied and not user.categories_studied:
         await update.message.reply_text('<b>У тебя выбрано 0 категорий для изучения 🫢</b>', parse_mode=ParseMode.HTML)
         await change_categories(update, context)
         return ConversationHandler.END
